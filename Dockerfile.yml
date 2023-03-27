@@ -1,0 +1,24 @@
+FROM python:3.7-alpine
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 更新 pip
+RUN pip install --no-cache-dir --upgrade pip
+
+# 安装依赖
+COPY requirements.txt /app/requirements.txt
+WORKDIR /app
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apk del .build-deps
+
+# 将代码复制到容器中
+COPY . /app
+
+EXPOSE 2233
+
+# 启动应用
+CMD ["python3", "app.py"]
+

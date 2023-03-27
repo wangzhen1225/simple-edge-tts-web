@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>语音合成</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ladda/dist/ladda.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ladda/dist/spin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ladda/dist/ladda.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.3.4/axios.min.js" integrity="sha512-LUKzDoJKOLqnxGWWIBM4lzRBlxcva2ZTztO8bTcWPmDSpkErWx0bSP4pdsjNH8kiHAUPaT06UXcb+vOEZH+HpQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <style>
+     body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+      form {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        background-color: #f2f2f2;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        position: relative;
+      }
+      label, select {
+        margin: 10px;
+      }
+      textarea, select {
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        font-size: 16px;
+      }
+      textarea {
+        height: 300px;
+        width: 600px;
+        resize: none;
+      }
+      
+      input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 100%;
+        margin-top: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #3e8e41;
+      }
+
+      #audio {
+        display: block;
+        margin: 0 auto;
+        max-width: 500px;
+      }
+
+    </style>
+  </head>
+  <script>
+    function submitForm() {
+      if (document.getElementById("text").value.trim() === "" && !document.getElementById('file_upload').value) {
+        Swal.fire({
+          title: '提示',
+          text:'请输入文本或者上传txt文件，否则你准备让合成工具说什么呢',
+          icon: 'warning',
+          confirmButtonText: '确定'
+        });
+          return;
+      }
+      
+      var synthesisBtn = document.getElementById("synthesisBtn");
+      var originStyle = synthesisBtn.style;
+
+      Ladda.bind('#synthesisBtn');
+      var laddaButton = Ladda.create(document.querySelector('#synthesisBtn'));
+      laddaButton.start();
+
+      const form = document.getElementById('tts_form');
+      const formData = new FormData(form);
+      
+       // 获取audio元素
+      const audioPlayer = document.getElementById("audio");
+      
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = "blob";
+      xhr.open('POST', '/submit');
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          laddaButton.stop();
+          reset_btn_css();
+          // // 将响应数据转换为Blob对象
+          const blob = new Blob([xhr.response], { type: "audio/mpeg" });
+          // 创建URL对象，用于生成音频播放链接
+          const url = URL.createObjectURL(blob); 
+          // 设置audio元素的播放链接
+          audioPlayer.src = url;
+          audioPlayer.play();
+        }else {
+          debugger;
+          var blob = xhr.response;
+          var reader = new FileReader();
+          reader.onload = function() {
+            debugger;
+            var text = reader.result;
+            Swal.fire({
+              title: '提示',
+              text: JSON.parse(text)['error'],
+              icon: 'warning',
+              confirmButtonText: '确定'
+            });
+          };
+          reader.readAsText(blob);
+          laddaButton.stop();
+          reset_btn_css();
+        }
+      };
+      xhr.send(formData);
+  }
+
+  function reset_btn_css(){
+    var btn = document.getElementById("synthesisBtn");
+    btn.style['background-color'] = "#4CAF50";
+    btn.style['border-radius'] = "5px";
+    btn.style['border'] = "none";
+    btn.style['padding'] = "10px 20px";
+    btn.style['font-size'] = "16px";
+  }
+  </script>
+  <body>
+    <form id="tts_form">
+      <label for="text">文本</label>
+      <textarea id="text" name="text"></textarea>
+      <input type="file" name="file_upload" id="file_upload">
+    
+      <label for="voice">声音</label>
+      <select id="voice" name="voice">
+        <option value="zh-CN-XiaoxiaoNeural"> zh-CN-XiaoxiaoNeural【 Female】</option>
+        <option value="zh-CN-XiaoyiNeural"> zh-CN-XiaoyiNeural【 Female】</option>
+        <option value="zh-CN-YunjianNeural"> zh-CN-YunjianNeural【 Male】</option>
+        <option value="zh-CN-YunxiNeural"> zh-CN-YunxiNeural【 Male】</option>
+        <option value="zh-CN-YunxiaNeural"> zh-CN-YunxiaNeural【 Male】</option>
+        <option value="zh-CN-YunyangNeural"> zh-CN-YunyangNeural【 Male】</option>
+        <option value="zh-CN-liaoning-XiaobeiNeural"> zh-CN-liaoning-XiaobeiNeural【 Female】</option>
+        <option value="zh-CN-shaanxi-XiaoniNeural"> zh-CN-shaanxi-XiaoniNeural【 Female】</option>
+        <option value="zh-HK-HiuGaaiNeural"> zh-HK-HiuGaaiNeural【 Female】</option>
+        <option value="zh-HK-HiuMaanNeural"> zh-HK-HiuMaanNeural【 Female】</option>
+        <option value="zh-HK-WanLungNeural"> zh-HK-WanLungNeural【 Male】</option>
+        <option value="zh-TW-HsiaoChenNeural"> zh-TW-HsiaoChenNeural【 Female】</option>
+        <option value="zh-TW-HsiaoYuNeural"> zh-TW-HsiaoYuNeural【 Female】</option>
+        <option value="zh-TW-YunJheNeural"> zh-TW-YunJheNeural【 Male】</option>
+      </select>
+    
+      <label for="rate">语速</label>
+      <select id="rate" name="rate">
+        <option value="+0%">+0%</option>
+        <option value="+10%">+10%</option>
+        <option value="+20%">+20%</option>
+        <option value="+50%">+50%</option>
+        <option value="+100%">+100%</option>
+      </select>
+    
+      <button id="synthesisBtn" type="button" onclick="submitForm()" data-style="zoom-out">合成语音</button>
+    </form>
+
+    <audio id="audio" controls style="width: 100%; margin-top: 10px;">
+    </audio>
+    
+  </body>
+</html>
+
+
+
+
